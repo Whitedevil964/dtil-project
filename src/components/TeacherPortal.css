@@ -1,0 +1,117 @@
+.teacher-portal { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+.tp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.tp-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.tp-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.tp-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tp-tab {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid rgba(var(--invert-rgb),0.08);
+  background: rgba(var(--invert-rgb),0.04);
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.tp-tab:hover { background: rgba(var(--invert-rgb),0.08); color: #f1f5f9; }
+
+.tp-tab.active {
+  background: rgba(225,29,72,0.15);
+  border-color: rgba(225,29,72,0.3);
+  color: #f43f5e;
+}
+
+.tp-section-title { font-weight: 700; font-size: 1rem; margin-bottom: 18px; }
+
+.tp-grid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) { .tp-grid { grid-template-columns: 1fr; } }
+
+/* Form */
+.tp-form { display: flex; flex-direction: column; gap: 16px; }
+
+.tp-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 700px) { .tp-form-row { grid-template-columns: 1fr; } }
+
+.tp-field { display: flex; flex-direction: column; gap: 6px; }
+
+.tp-field label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tp-field input, .tp-field select, .tp-field textarea {
+  background: rgba(var(--invert-rgb),0.05);
+  border: 1px solid rgba(var(--invert-rgb),0.1);
+  color: #f1f5f9;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  outline: none;
+  font-family: 'Outfit', sans-serif;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.tp-field input:focus, .tp-field select:focus, .tp-field textarea:focus {
+  border-color: #e11d48;
+  box-shadow: 0 0 0 3px rgba(225,29,72,0.12);
+}
+
+.tp-field select option { background: #1a1a2e; color: #f1f5f9; }
+
+.tp-field textarea { resize: vertical; min-height: 100px; }
+
+/* Attendance radio buttons */
+.att-radio { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.att-radio input[type="radio"] { display: none; }
+
+.att-radio-label {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(var(--invert-rgb),0.04);
+  color: #64748b;
+}
+
+.att-radio input:checked + .att-p { background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.4); color: #10b981; }
+.att-radio input:checked + .att-a { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.4); color: #ef4444; }
+.att-radio input:checked + .att-l { background: rgba(245,158,11,0.2); border-color: rgba(245,158,11,0.4); color: #f59e0b; }
+
+.att-radio-label:hover { background: rgba(var(--invert-rgb),0.08); color: #f1f5f9; }
