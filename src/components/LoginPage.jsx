@@ -39,7 +39,9 @@ export default function LoginPage({ onLogin }) {
       <div className="blob blob-1" /><div className="blob blob-2" /><div className="blob blob-3" />
       <div className="login-card">
         <div className="login-brand">
-          <div className="login-brand-icon"><BrainCircuit size={26} color="#fff" /></div>
+          <div className="login-brand-icon" style={{ background: 'transparent', padding: 0 }}>
+            <img src="/logo.jpg" alt="DYPCOEI Logo" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '6px', background: '#fff' }} />
+          </div>
           <div>
             <h1 className="login-brand-name">DYPCOEI<span className="login-brand-ai"> NEURAL CORE</span></h1>
             <p className="login-brand-tagline">Quantum Synthetic Construct &middot; FY {getAcademicYear()}</p>
@@ -76,6 +78,11 @@ export default function LoginPage({ onLogin }) {
             </div>
           </div>
           {error && <div className="login-error">{error}</div>}
+          <div style={{ textAlign: 'right', marginTop: '-8px' }}>
+            <button type="button" className="demo-fill-btn" style={{ fontSize: '0.75rem', textDecoration: 'none' }} onClick={() => setError('Neural recovery system initializing... Check your institutional email.')}>
+              Forgot Password?
+            </button>
+          </div>
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? <span className="login-spinner" /> : <><ArrowRight size={16} /> Establish Link</>}
           </button>
@@ -83,7 +90,7 @@ export default function LoginPage({ onLogin }) {
 
         <div className="login-footer">
           Dr. D. Y. Patil Automated Neural Campus<br />
-          <span>Holographic Node \u00b7 Talegaon, Sector 4 \u00b7 2078 Standards</span>
+          <span>Holographic Node · Talegaon, Sector 4 · 2078 Standards</span>
         </div>
       </div>
     </div>

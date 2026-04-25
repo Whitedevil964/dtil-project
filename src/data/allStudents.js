@@ -1,5 +1,5 @@
 // Auto-generated from PDF
-export const ALL_STUDENTS = [
+const RAW_STUDENTS = [
   {
     "rollNo": "1101",
     "div": "A",
@@ -613,7 +613,7 @@ export const ALL_STUDENTS = [
   {
     "rollNo": "1162",
     "div": "A",
-    "name": "JAHAGIRDAR MUBIN IMRAN Dr. D. Y. PATIL COLLEGE OF ENGINEERING & INNOVATION (An Autonomous Institute Affiliated to SPPU) Survey No. 27/A/1/2C, Varale Campus, Near Talegaon Railway Station, Tal. Maval, Dist. Pune 410 507, Ph: 020 48522561, 565,566 Web Site: www.dypcoei.edu.in,  Email: principal.dypcoei@dypatilef.com Dr. Sushant Patil Dr. Suresh Mali Department of Engineering Science & Humanities No.  Batch Roll Nos. Application ID Candidate Name",
+    "name": "JAHAGIRDAR MUBIN IMRAN",
     "id": "s_1162",
     "email": "jahagirdar.name1162@dypcoei.edu.in",
     "password": "dyp@1162",
@@ -1233,7 +1233,7 @@ export const ALL_STUDENTS = [
   {
     "rollNo": "1262",
     "div": "B",
-    "name": "PRAJWAL RAVINDRA PURANIK Dr. D. Y. PATIL COLLEGE OF ENGINEERING & INNOVATION (An Autonomous Institute Affiliated to SPPU) Survey No. 27/A/1/2C, Varale Campus, Near Talegaon Railway Station, Tal. Maval, Dist. Pune 410 507, Ph: 020 48522561, 565,566 Web Site: www.dypcoei.edu.in, Email: principal.dypcoei@dypatilef.com Department of Engineering Science & Humanities",
+    "name": "PRAJWAL RAVINDRA PURANIK",
     "id": "s_1262",
     "email": "prajwal.humanities1262@dypcoei.edu.in",
     "password": "dyp@1262",
@@ -1853,7 +1853,7 @@ export const ALL_STUDENTS = [
   {
     "rollNo": "1362",
     "div": "C",
-    "name": "WARHADDE SARTHAK DATTARAO Dr. D. Y. PATIL COLLEGE OF ENGINEERING & INNOVATION (An Autonomous Institute Affiliated to SPPU) Survey No. 27/A/1/2C, Varale Campus, Near Talegaon Railway Station, Tal. Maval, Dist. Pune 410 507, Ph: 020 48522561, 565,566 Web Site: www.dypcoei.edu.in,  Email: principal.dypcoei@dypatilef.com Dr. Sushant Patil Dr. Suresh Mali Department of Engineering Science & Humanities No.  Batch Roll Nos. Application ID Candidate Name",
+    "name": "WARHADDE SARTHAK DATTARAO",
     "id": "s_1362",
     "email": "warhadde.name1362@dypcoei.edu.in",
     "password": "dyp@1362",
@@ -2453,7 +2453,7 @@ export const ALL_STUDENTS = [
   {
     "rollNo": "1460",
     "div": "D",
-    "name": "KIRDE AARAV SANTOSH Dr. D. Y. PATIL COLLEGE OF ENGINEERING & INNOVATION (An Autonomous Institute Affiliated to SPPU) Survey No. 27/A/1/2C, Varale Campus, Near Talegaon Railway Station, Tal. Maval, Dist. Pune 410 507, Ph: 020 48522561, 565,566 Web Site: www.dypcoei.edu.in, Email: principal.dypcoei@dypatilef.com Department of Engineering Science & Humanities",
+    "name": "KIRDE AARAV SANTOSH",
     "id": "s_1460",
     "email": "kirde.humanities1460@dypcoei.edu.in",
     "password": "dyp@1460",
@@ -3053,7 +3053,7 @@ export const ALL_STUDENTS = [
   {
     "rollNo": "1560",
     "div": "E",
-    "name": "VAIBHAVI RAJESH PRABHALE Dr. D. Y. PATIL COLLEGE OF ENGINEERING & INNOVATION (An Autonomous Institute Affiliated to SPPU) Survey No. 27/A/1/2C, Varale Campus, Near Talegaon Railway Station, Tal. Maval, Dist. Pune 410 507, Ph: 020 48522561, 565,566 Web Site: www.dypcoei.edu.in, Email: principal.dypcoei@dypatilef.com Department of Engineering Science & Humanities",
+    "name": "VAIBHAVI RAJESH PRABHALE",
     "id": "s_1560",
     "email": "vaibhavi.humanities1560@dypcoei.edu.in",
     "password": "dyp@1560",
@@ -3643,7 +3643,7 @@ export const ALL_STUDENTS = [
   {
     "rollNo": "1660",
     "div": "F",
-    "name": "PARAB RAJESH DASHARATH Dr. D. Y. PATIL COLLEGE OF ENGINEERING & INNOVATION (An Autonomous Institute Affiliated to SPPU) Survey No. 27/A/1/2C, Varale Campus, Near Talegaon Railway Station, Tal. Maval, Dist. Pune 410 507, Ph: 020 48522561, 565,566 Web Site: www.dypcoei.edu.in, Email: principal.dypcoei@dypatilef.com Department of Engineering Science & Humanities",
+    "name": "PARAB RAJESH DASHARATH",
     "id": "s_1660",
     "email": "parab.humanities1660@dypcoei.edu.in",
     "password": "dyp@1660",
@@ -4231,3 +4231,12 @@ export const ALL_STUDENTS = [
     "dept": "FY B.Tech \u2013 Division G"
   }
 ];
+
+export const ALL_STUDENTS = RAW_STUDENTS.map(student => {
+  const index = parseInt(student.rollNo.slice(-2), 10);
+  let batchNum = 3;
+  if (index >= 1 && index <= 20) batchNum = 1;
+  else if (index >= 21 && index <= 40) batchNum = 2;
+  student.batch = student.div + batchNum;
+  return student;
+});

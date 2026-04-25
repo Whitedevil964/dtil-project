@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock } from 'lucide-react';
-import { DIV_C_SCHEDULE, SUBJECTS, TEACHERS } from '../data/schoolData';
+import { ALL_DIV_SCHEDULES, SUBJECTS, TEACHERS, DIVISIONS, getScheduleForBatch } from '../data/schoolData';
 import { getAcademicYear, getSemester } from '../utils/dateUtils';
 
 const DAYS = ['monday','tuesday','wednesday','thursday','friday'];
@@ -15,11 +15,35 @@ const SUBJECT_COLORS = {
   IKS: 'slot-red', MPW: 'slot-green', PCS: 'slot-purple',
 };
 
-export default function SchedulePage() {
+export default function SchedulePage({ user }) {
+  const userDiv = user?.div || 'C';
+  const rawUserSchedule = ALL_DIV_SCHEDULES[userDiv] || ALL_DIV_SCHEDULES['C'];
+  const userBatch = user?.batch || `${userDiv}1`;
+  const userSchedule = getScheduleForBatch(rawUserSchedule, userBatch);
+  const divInfo = DIVISIONS[userDiv];
+
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      <h1 className="page-title">Weekly Timetable – Division C</h1>
-      <p className="page-subtitle">FY B.Tech · {getSemester()} {getAcademicYear()} · Room A026 · Class Teacher: Mr. Ramchandra Popale</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <h1 className="page-title">Weekly Timetable – Division {userDiv} (Batch {user?.batch || `${userDiv}1`})</h1>
+          <p className="page-subtitle">FY B.Tech · {getSemester()} {getAcademicYear()} · Room {divInfo?.room || 'Unknown'}</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Clock size={16} /> Export PDF
+        </button>
+      </div>
+
+      {/* Color Legend */}
+      <div className="glass" style={{ padding: '12px 16px', marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center' }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Color Key:</span>
+        {Object.entries(SUBJECT_COLORS).slice(0, 8).map(([code, css]) => (
+          <div key={code} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem' }}>
+            <div className={`legend-dot ${css}`} style={{ width: 10, height: 10, borderRadius: 2 }} />
+            <span style={{ color: '#94a3b8' }}>{code}</span>
+          </div>
+        ))}
+      </div>
 
       {/* Weekly grid */}
       <div className="schedule-weekly-grid">
@@ -29,21 +53,36 @@ export default function SchedulePage() {
               {DAY_LABELS[di].slice(0,3).toUpperCase()}
               {di === Math.min(Math.max(TODAY_IDX,0),4) && <div style={{ fontSize: '0.6rem', marginTop: 2 }}>TODAY</div>}
             </div>
-            {(DIV_C_SCHEDULE[day] || []).map((slot, si) => {
+            {(userSchedule[day] || []).map((slot, si) => {
               const subj = slot.subject ? SUBJECTS[slot.subject] : null;
               const teacher = slot.teacher ? TEACHERS[slot.teacher] : null;
               if (!slot.subject) return (
-                <div key={si} className="slot-empty" title={slot.note || 'Free'} />
+                <div key={si} className="slot-empty" style={{ opacity: 0.3 }} title={slot.note || 'Buffer / Free'} />
               );
+              
+              // Highlighting logic for current period
+              const now = new Date();
+              const [hStart, mStart] = slot.time.split('–')[0].split(':').map(Number);
+              const [hEnd, mEnd] = slot.time.split('–')[1].trim().split(' ')[0].split(':').map(Number);
+              const isPM = slot.time.includes('PM') && hEnd !== 12;
+              const endTimeH = isPM ? hEnd + 12 : hEnd;
+              
+              const startTime = new Date(); startTime.setHours(hStart, mStart, 0);
+              const endTime = new Date(); endTime.setHours(endTimeH, mEnd, 0);
+              const isCurrentPeriod = di === TODAY_IDX && now >= startTime && now <= endTime;
               const cssClass = SUBJECT_COLORS[slot.subject] || 'slot-purple';
               return (
-                <div key={si} className={`schedule-slot ${cssClass}`} title={subj?.name}>
+                <div key={si} 
+                  className={`schedule-slot ${cssClass} ${isCurrentPeriod ? 'current-period' : ''}`} 
+                  title={`${subj?.name || slot.subject}\nFaculty: ${teacher?.name || slot.teacher}\nRoom: ${slot.room}\nTime: ${slot.time}`}
+                >
                   <div className="slot-subject">{slot.subject}</div>
                   <div className="slot-room">{slot.room}</div>
                   <div className="slot-room" style={{ marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
                     <Clock size={9} />{slot.time.split('–')[0].trim()}
                   </div>
                   {teacher && <div className="slot-room" style={{ marginTop: 1, fontSize: '0.65rem' }}>{teacher.abbr}</div>}
+                  {isCurrentPeriod && <div className="live-period-indicator" />}
                 </div>
               );
             })}
@@ -74,7 +113,7 @@ export default function SchedulePage() {
       </div>
 
       {/* Subject–Faculty reference */}
-      <div className="section-title">Faculty Reference – Div C Subjects</div>
+      <div className="section-title">Faculty Reference – Div {userDiv} Subjects</div>
       <div className="glass" style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
           <thead>
@@ -85,21 +124,24 @@ export default function SchedulePage() {
             </tr>
           </thead>
           <tbody>
-            {[
-              { code: 'AEC', teacher: 'RAP', room: 'A026' },
-              { code: 'MEC', teacher: 'MSA', room: 'A107' },
-              { code: 'MEE', teacher: 'VS',  room: 'B001' },
-              { code: 'GUI', teacher: 'AV',  room: 'A110' },
-              { code: 'OOP', teacher: 'PNB', room: 'A028' },
-              { code: 'DTIL',teacher: 'AP',  room: 'A026' },
-            ].map(row => {
+            {(() => {
+              const subjectsSet = new Set();
+              const facultyData = [];
+              Object.values(userSchedule).flat().forEach(slot => {
+                if (slot.subject && slot.subject !== 'PRACTICAL' && !subjectsSet.has(slot.subject)) {
+                  subjectsSet.add(slot.subject);
+                  facultyData.push({ code: slot.subject, teacher: slot.teacher, room: slot.room });
+                }
+              });
+              return facultyData;
+            })().map(row => {
               const s = SUBJECTS[row.code];
               const t = TEACHERS[row.teacher];
               return (
                 <tr key={row.code} style={{ borderBottom: '1px solid rgba(var(--invert-rgb),0.05)' }}>
-                  <td style={{ padding: '10px 14px', color: s.color, fontWeight: 700 }}>{row.code}</td>
-                  <td style={{ padding: '10px 14px', color: '#f1f5f9' }}>{s.name}</td>
-                  <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{t?.name}</td>
+                  <td style={{ padding: '10px 14px', color: s?.color || '#f1f5f9', fontWeight: 700 }}>{row.code}</td>
+                  <td style={{ padding: '10px 14px', color: '#f1f5f9' }}>{s?.name || row.code}</td>
+                  <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{t?.name || row.teacher}</td>
                   <td style={{ padding: '10px 14px', color: '#64748b' }}>{row.room}</td>
                 </tr>
               );

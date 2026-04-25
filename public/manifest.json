@@ -1,20 +1,20 @@
 {
-  "short_name": "DYPCOEI AI",
-  "name": "DYPCOEI AI Academic Portal",
+  "short_name": "Neural Core",
+  "name": "DYPCOEI Neural Core",
   "icons": [
     {
-      "src": "vite.svg",
+      "src": "logo.jpg",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/jpeg"
     },
     {
-      "src": "vite.svg",
+      "src": "logo.jpg",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/jpeg"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#060608",
-  "background_color": "#060608"
+  "theme_color": "#050508",
+  "background_color": "#050508"
 }

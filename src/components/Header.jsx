@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Bell, X } from 'lucide-react';
+import { Search, Bell, X, Menu } from 'lucide-react';
 import './Header.css';
 
-export default function Header({ user, addToast }) {
+export default function Header({ user, addToast, profilePics, mobileMenuOpen, setMobileMenuOpen }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchVal, setSearchVal] = useState('');
 
@@ -15,13 +15,24 @@ export default function Header({ user, addToast }) {
 
   return (
     <header className="header">
+      <div className="header-left-mobile">
+        <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(true)}>
+          <Menu size={24} />
+        </button>
+      </div>
+
       <div className="header-search">
         <Search size={16} />
         <input
           type="text"
           placeholder="Search classes, assignments, teachers..."
           value={searchVal}
-          onChange={e => setSearchVal(e.target.value)}
+          onChange={e => {
+            setSearchVal(e.target.value);
+            if (e.target.value.length > 2) {
+              addToast({ type: 'info', title: 'Neural Search', msg: `Searching across indices for: "${e.target.value}"` });
+            }
+          }}
         />
         {searchVal && (
           <button className="search-clear" onClick={() => setSearchVal('')}><X size={14} /></button>
@@ -65,7 +76,9 @@ export default function Header({ user, addToast }) {
 
         <div className="header-user">
           <div className="header-avatar">
-            {user?.name?.[0] ?? 'U'}
+            {profilePics?.[user?.id] ? (
+              <img src={profilePics[user.id]} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+            ) : (user?.name?.[0] ?? 'U')}
           </div>
           <div className="header-user-info">
             <span className="header-user-name">{user?.name}</span>

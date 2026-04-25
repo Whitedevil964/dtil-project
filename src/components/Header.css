@@ -194,8 +194,57 @@
 .header-user-role {
   font-size: 0.72rem;
   color: #64748b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   max-width: 200px;
 }
+
+/* Mobile Header Styles */
+.header-left-mobile {
+  display: none;
+}
+
+.mobile-menu-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-right: 12px;
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0 16px;
+    gap: 8px;
+  }
+  
+  .header-left-mobile {
+    display: block;
+  }
+
+  .header-search {
+    width: auto;
+    flex: 1;
+    padding: 8px 12px;
+  }
+
+  .header-search input {
+    width: 100%;
+  }
+
+  .header-date {
+    display: none;
+  }
+
+  .header-user-role {
+    display: none;
+  }
+
+  .header-right {
+    gap: 12px;
+  }
+}
+

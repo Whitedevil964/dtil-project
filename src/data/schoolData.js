@@ -49,53 +49,9 @@ export const TEACHERS = {
   SJ:  { name: 'Mr. Siddhi Jadhav',    abbr: 'SJ',  subjects: ['PCS','MPW'], id: 't_sj',  email: 'sjadhav@dypcoei.edu.in', password: 'teacher123' },
 };
 
-// ============================
-// DIVISION C – Class Room A026
-// Class Teacher: Mr. Ramchandra Popale (RAP)
-// ============================
-// Timings: 1=9:15-10:15, 2=10:15-11:15, break 11:15-11:30
-//          3=11:30-12:30, 4=12:30-1:30, lunch 1:30-2:15
-//          5=2:15-3:15,   6=3:15-4:15
-export const DIV_C_SCHEDULE = {
-  monday: [
-    { period: 1, time: '9:15 – 10:15',  subject: null,  teacher: null, room: null, note: 'Free' },
-    { period: 2, time: '10:15 – 11:15', subject: null,  teacher: null, room: null, note: 'Free' },
-    { period: 3, time: '11:30 – 12:30', subject: 'AEC', teacher: 'RAP', room: 'A026' },
-    { period: 4, time: '12:30 – 1:30',  subject: 'OOP', teacher: 'PNB', room: 'A026' },
-    { period: 5, time: '2:15 – 3:15',   subject: 'MEC', teacher: 'MSA', room: 'A026' },
-    { period: 6, time: '3:15 – 4:15',   subject: 'GUI', teacher: 'AV',  room: 'A026' },
-  ],
-  tuesday: [
-    { period: 1, time: '9:15 – 10:15',  subject: null,  teacher: null, room: null, note: 'Free' },
-    { period: 2, time: '10:15 – 11:15', subject: null,  teacher: null, room: null, note: 'Free' },
-    { period: 3, time: '11:30 – 12:30', subject: 'MEE', teacher: 'VS',  room: 'A026' },
-    { period: 4, time: '12:30 – 1:30',  subject: 'AEC', teacher: 'RAP', room: 'A026' },
-    { period: 5, time: '2:15 – 3:15',   subject: 'OOP', teacher: 'PNB', room: 'A026' },
-    { period: 6, time: '3:15 – 4:15',   subject: 'MEC', teacher: 'MSA', room: 'A026' },
-  ],
-  wednesday: [
-    { period: 1, time: '9:15 – 10:15',  subject: null,  teacher: null, room: null, note: 'Free' },
-    { period: 2, time: '10:15 – 11:15', subject: null,  teacher: null, room: null, note: 'Free' },
-    { period: 3, time: '11:30 – 12:30', subject: 'AEC', teacher: 'RAP', room: 'A026' },
-    { period: 4, time: '12:30 – 1:30',  subject: 'MEE', teacher: 'VS',  room: 'A026' },
-    { period: 5, time: '2:15 – 3:15',   subject: 'AEC', teacher: 'RAP', room: 'A026' },  // Tutorial C1
-    { period: 6, time: '3:15 – 4:15',   subject: 'MEC', teacher: 'MSA', room: 'A026' },
-  ],
-  thursday: [
-    { period: 1, time: '9:15 – 10:15',  subject: null,  teacher: null, room: null, note: 'Free' },
-    { period: 2, time: '10:15 – 11:15', subject: null,  teacher: null, room: null, note: 'Free' },
-    { period: 3, time: '11:30 – 12:30', subject: 'AEC', teacher: 'RAP', room: 'A026' },
-    { period: 4, time: '12:30 – 1:30',  subject: 'GUI', teacher: 'AV',  room: 'A026' },
-    { period: 5, time: '2:15 – 3:15',   subject: 'AEC', teacher: 'RAP', room: 'A026' }, // Tutorial C2
-    { period: 6, time: '3:15 – 4:15',   subject: null,  teacher: null, room: null, note: 'TG Contact Hour' },
-  ],
-  friday: [
-    { period: 3, time: '11:30 – 12:30', subject: 'DTIL', teacher: 'AP', room: 'A026', note: 'C1 only' },
-    { period: 4, time: '12:30 – 1:30',  subject: null,   teacher: null, room: null, note: 'Library Hours' },
-    { period: 5, time: '2:15 – 3:15',   subject: 'AEC',  teacher: 'RAP', room: 'A026' }, // Tutorial C3
-    { period: 6, time: '3:15 – 4:15',   subject: 'DTIL', teacher: 'AP', room: 'A026', note: 'C1 Lab' },
-  ],
-};
+// Schedules for all divisions are imported from schedulesData.js
+import { ALL_DIV_SCHEDULES, getScheduleForBatch } from './schedulesData';
+export { ALL_DIV_SCHEDULES, getScheduleForBatch };
 
 // All divisions' class teachers
 export const DIVISIONS = {

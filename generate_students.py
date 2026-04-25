@@ -32,9 +32,18 @@ def parse_students():
                 
                 sr_no, batch, roll_no, app_id, name_part = match.groups()
                 div = batch[0] # F1 -> F
+                roll_index = int(roll_no[-2:])
+                if roll_index <= 20:
+                    assigned_batch = f"{div}1"
+                elif roll_index <= 40:
+                    assigned_batch = f"{div}2"
+                else:
+                    assigned_batch = f"{div}3"
+                    
                 current_student = {
                     'rollNo': roll_no,
                     'div': div,
+                    'batch': assigned_batch,
                     'name': name_part.strip(),
                     'id': f's_{roll_no}'
                 }

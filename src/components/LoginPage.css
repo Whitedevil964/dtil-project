@@ -9,6 +9,24 @@
   padding: 20px;
 }
 
+.login-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(225, 29, 72, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(225, 29, 72, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  background-position: center center;
+  animation: gridMove 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes gridMove {
+  from { background-position: 0 0; }
+  to { background-position: 50px 50px; }
+}
+
 .blob {
   position: absolute;
   border-radius: 50%;
@@ -30,6 +48,17 @@
   padding: 40px;
   backdrop-filter: blur(20px);
   box-shadow: 0 30px 80px rgba(var(--invert-dark-rgb),0.6);
+  transition: transform 0.3s ease;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 28px 24px;
+    border-radius: 20px;
+  }
+  .login-brand-name {
+    font-size: 1.25rem;
+  }
 }
 
 .login-brand {
