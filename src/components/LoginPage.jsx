@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrainCircuit, GraduationCap, BookOpen, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { ALL_STUDENTS, TEACHERS } from '../data/schoolData';
 import { getAcademicYear } from '../utils/dateUtils';
@@ -11,6 +11,13 @@ export default function LoginPage({ onLogin }) {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('role') === 'admin') {
+      setTab('teacher');
+    }
+  }, []);
 
   const handleLogin = (e) => {
     e.preventDefault();

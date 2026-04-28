@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Send, Search, Plus, X, Users, Check, Settings, Image as ImageIcon, ShieldAlert, UserPlus, UserMinus, ShieldCheck, Trash2, MoreVertical, Eraser, UserX, Ban, ChevronLeft } from 'lucide-react';
 import { ALL_STUDENTS, TEACHERS } from '../data/schoolData';
 
@@ -32,6 +32,8 @@ export default function MessagesPage({ user, globalChats = {}, setGlobalChats, p
   
   // Track manually opened chats that might not have messages yet
   const [activeChatIds, setActiveChatIds] = useState([]);
+
+
 
   const renderAvatar = (personId, defaultAvatar, isGroup = false, groupLogo = null) => {
     if (isGroup) {
@@ -151,6 +153,23 @@ export default function MessagesPage({ user, globalChats = {}, setGlobalChats, p
     setIsSearching(false);
     setMobileChatOpen(true);
   };
+
+  useEffect(() => {
+    const preSelected = localStorage.getItem('preSelectedChat');
+    if (preSelected) {
+      const student = (ALL_STUDENTS || []).find(s => s.name === preSelected);
+      if (student) {
+        startChat({
+          id: student.id,
+          name: student.name,
+          role: student.dept,
+          avatar: student.name[0],
+          color: '#10b981'
+        });
+      }
+      localStorage.removeItem('preSelectedChat');
+    }
+  }, [activeChatIds]);
 
   const sendMsg = () => {
     if (!inputVal.trim() || !activeSelected || !user || !setGlobalChats) return;

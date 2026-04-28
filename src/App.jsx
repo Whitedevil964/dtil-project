@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import HomePage from './pages/HomePage';
 import LoginPage from './components/LoginPage';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -14,7 +15,11 @@ import ToastContainer from './components/ToastContainer';
 import { ALL_STUDENTS, TEACHERS } from './data/schoolData';
 
 export default function App() {
-  const [user, setUser] = useState(null);
+  // Trigger HMR
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('DYPCOEI_USER')) || null; } catch { return null; }
+  });
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [activePage, setActivePage] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
@@ -71,6 +76,33 @@ export default function App() {
   useEffect(() => { localStorage.setItem('DYPCOEI_BLOCKED', JSON.stringify(blockedUsers)); }, [blockedUsers]);
   useEffect(() => { localStorage.setItem('DYPCOEI_SUBMISSIONS', JSON.stringify(submissions)); }, [submissions]);
   useEffect(() => { localStorage.setItem('DYPCOEI_REMINDERS', JSON.stringify(reminders)); }, [reminders]);
+  useEffect(() => { 
+    if (user) localStorage.setItem('DYPCOEI_USER', JSON.stringify(user));
+    else localStorage.removeItem('DYPCOEI_USER');
+  }, [user]);
+
+  // Manual Routing & Redirects
+  useEffect(() => {
+    const handlePopState = () => setCurrentPath(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    
+    // Initial Redirect Logic
+    const path = window.location.pathname;
+    if (user && (path === '/' || path === '/login')) {
+      window.history.pushState({}, '', '/dashboard');
+      setCurrentPath('/dashboard');
+    } else if (!user && path === '/dashboard') {
+      window.history.pushState({}, '', '/login');
+      setCurrentPath('/login');
+    }
+
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigate = (path) => {
+    window.history.pushState({}, '', path);
+    setCurrentPath(path);
+  };
 
   useEffect(() => {
     const handleStorage = (e) => {
@@ -115,6 +147,9 @@ export default function App() {
       return { ...prev, streak: newStreak, xp: newXP, lastLogin: today, rank: newRank };
     });
     setActivePage('dashboard');
+    if (window.location.pathname !== '/dashboard') {
+      navigate('/dashboard');
+    }
   }, [user]);
 
   useEffect(() => {
@@ -187,7 +222,10 @@ export default function App() {
     }
   }, [user]);
 
-  if (!user) return <LoginPage onLogin={setUser} />;
+  if (!user) {
+    if (currentPath === '/') return <HomePage onLogin={() => navigate('/login')} />;
+    return <LoginPage onLogin={setUser} />;
+  }
   const isTeacher = user.role === 'teacher';
 
   const renderPage = () => {
@@ -215,7 +253,7 @@ export default function App() {
           activePage={activePage} 
           setActivePage={(page) => { setActivePage(page); setMobileMenuOpen(false); }} 
           user={user} 
-          onLogout={() => { setUser(null); setActivePage('dashboard'); }} 
+          onLogout={() => { setUser(null); setActivePage('dashboard'); navigate('/'); }} 
           isTeacher={isTeacher} 
           unreadMessageCount={unreadMessageCount} 
           profilePics={profilePics} 
@@ -233,7 +271,7 @@ export default function App() {
           <div className="page-content fade-in" key={activePage}>{renderPage()}</div>
         </div>
       </div>
-      <AIChat />
+      <AIChat userContext={user} />
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </>
   );

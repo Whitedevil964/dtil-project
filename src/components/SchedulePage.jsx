@@ -16,18 +16,53 @@ const SUBJECT_COLORS = {
 };
 
 export default function SchedulePage({ user }) {
-  const userDiv = user?.div || 'C';
-  const rawUserSchedule = ALL_DIV_SCHEDULES[userDiv] || ALL_DIV_SCHEDULES['C'];
-  const userBatch = user?.batch || `${userDiv}1`;
-  const userSchedule = getScheduleForBatch(rawUserSchedule, userBatch);
-  const divInfo = DIVISIONS[userDiv];
+  let finalSchedule = {};
+  let titleStr = '';
+  let subtitleStr = `FY B.Tech · ${getSemester()} ${getAcademicYear()}`;
+  let referenceTitle = '';
+
+  if (user?.role === 'teacher') {
+    const teacherInfo = Object.values(TEACHERS).find(t => t.id === user.id) || Object.values(TEACHERS)[0];
+    titleStr = `Weekly Timetable – ${teacherInfo.name}`;
+    subtitleStr = `Faculty Schedule · ${teacherInfo.subjects.join(', ')}`;
+    referenceTitle = `Faculty Reference – ${teacherInfo.abbr} Subjects`;
+    
+    DAYS.forEach(day => {
+      finalSchedule[day] = [];
+      for (let p = 1; p <= 6; p++) {
+        let foundSlot = null;
+        for (const div of Object.keys(ALL_DIV_SCHEDULES)) {
+          const slot = (ALL_DIV_SCHEDULES[div][day] || []).find(s => s.period === p);
+          if (slot && slot.teacher === teacherInfo.abbr) {
+            foundSlot = { ...slot, room: `${slot.room} (Div ${div})` };
+            break;
+          }
+        }
+        if (foundSlot) {
+          finalSchedule[day].push(foundSlot);
+        } else {
+          const timeRef = ALL_DIV_SCHEDULES['A'][day].find(s => s.period === p)?.time || '';
+          finalSchedule[day].push({ period: p, time: timeRef, subject: null, note: 'Free' });
+        }
+      }
+    });
+  } else {
+    const userDiv = user?.div || 'C';
+    const rawUserSchedule = ALL_DIV_SCHEDULES[userDiv] || ALL_DIV_SCHEDULES['C'];
+    const userBatch = user?.batch || `${userDiv}1`;
+    finalSchedule = getScheduleForBatch(rawUserSchedule, userBatch);
+    const divInfo = DIVISIONS[userDiv];
+    titleStr = `Weekly Timetable – Division ${userDiv} (Batch ${userBatch})`;
+    subtitleStr += ` · Room ${divInfo?.room || 'Unknown'}`;
+    referenceTitle = `Faculty Reference – Div ${userDiv} Subjects`;
+  }
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
         <div>
-          <h1 className="page-title">Weekly Timetable – Division {userDiv} (Batch {user?.batch || `${userDiv}1`})</h1>
-          <p className="page-subtitle">FY B.Tech · {getSemester()} {getAcademicYear()} · Room {divInfo?.room || 'Unknown'}</p>
+          <h1 className="page-title">{titleStr}</h1>
+          <p className="page-subtitle">{subtitleStr}</p>
         </div>
         <button className="btn btn-primary" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Clock size={16} /> Export PDF
@@ -53,7 +88,7 @@ export default function SchedulePage({ user }) {
               {DAY_LABELS[di].slice(0,3).toUpperCase()}
               {di === Math.min(Math.max(TODAY_IDX,0),4) && <div style={{ fontSize: '0.6rem', marginTop: 2 }}>TODAY</div>}
             </div>
-            {(userSchedule[day] || []).map((slot, si) => {
+            {(finalSchedule[day] || []).map((slot, si) => {
               const subj = slot.subject ? SUBJECTS[slot.subject] : null;
               const teacher = slot.teacher ? TEACHERS[slot.teacher] : null;
               if (!slot.subject) return (
@@ -113,7 +148,7 @@ export default function SchedulePage({ user }) {
       </div>
 
       {/* Subject–Faculty reference */}
-      <div className="section-title">Faculty Reference – Div {userDiv} Subjects</div>
+      <div className="section-title">{referenceTitle}</div>
       <div className="glass" style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
           <thead>
@@ -127,7 +162,7 @@ export default function SchedulePage({ user }) {
             {(() => {
               const subjectsSet = new Set();
               const facultyData = [];
-              Object.values(userSchedule).flat().forEach(slot => {
+              Object.values(finalSchedule).flat().forEach(slot => {
                 if (slot.subject && slot.subject !== 'PRACTICAL' && !subjectsSet.has(slot.subject)) {
                   subjectsSet.add(slot.subject);
                   facultyData.push({ code: slot.subject, teacher: slot.teacher, room: slot.room });
