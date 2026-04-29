@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Send, Search, Plus, X, Users, Check, Settings, Image as ImageIcon, ShieldAlert, UserPlus, UserMinus, ShieldCheck, Trash2, MoreVertical, Eraser, UserX, Ban, ChevronLeft, WifiOff } from 'lucide-react';
 import { ALL_STUDENTS, TEACHERS } from '../data/schoolData';
 import { supabase } from '../lib/supabase';
-import { addToast } from './ui/Toast';
+
 
 const INITIAL_CONTACTS = [];
 
@@ -16,7 +16,7 @@ function getUserInfo(id) {
   return { id, name: 'Unknown User', role: 'User', avatar: 'U', color: '#64748b' };
 }
 
-export default function MessagesPage({ user, profilePics, profilePrivacy, groups = [], setGroups, blockedUsers = {}, setBlockedUsers }) {
+export default function MessagesPage({ user, addToast, profilePics, profilePrivacy, groups = [], setGroups, blockedUsers = {}, setBlockedUsers }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [inputVal, setInputVal] = useState('');

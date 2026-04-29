@@ -210,7 +210,7 @@ export default function App() {
           : <Dashboard user={user} addToast={addToast} assignments={assignments} broadcasts={broadcasts} gamification={gamification} />;
       case 'schedule':    return <SchedulePage user={user} />;
       case 'tasks':       return <TasksPage addToast={addToast} assignments={assignments} user={user} submissions={submissions} setSubmissions={setSubmissions} reminders={reminders} setReminders={setReminders} />;
-      case 'messages':    return <MessagesPage user={user} profilePics={profilePics} profilePrivacy={profilePrivacy} groups={groups} setGroups={setGroups} blockedUsers={blockedUsers} setBlockedUsers={setBlockedUsers} />;
+      case 'messages':    return <MessagesPage user={user} addToast={addToast} profilePics={profilePics} profilePrivacy={profilePrivacy} groups={groups} setGroups={setGroups} blockedUsers={blockedUsers} setBlockedUsers={setBlockedUsers} />;
       case 'attendance':  return <AttendancePage user={user} />;
       case 'settings':    return <SettingsPage user={user} profilePics={profilePics} setProfilePics={setProfilePics} profilePrivacy={profilePrivacy} setProfilePrivacy={setProfilePrivacy} gamification={gamification} addToast={addToast} />;
       default:            return <Dashboard user={user} addToast={addToast} assignments={assignments} broadcasts={broadcasts} gamification={gamification} />;
