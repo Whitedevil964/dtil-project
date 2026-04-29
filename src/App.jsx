@@ -142,6 +142,10 @@ export default function App() {
           }
         }
       })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'assignments' }, payload => {
+        const oldA = payload.old;
+        setAssignments(prev => prev.filter(a => a.id !== oldA.id));
+      })
       .subscribe();
 
     const broadChannel = supabase.channel('broadcasts-realtime')

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Clock, CheckCircle, BookOpen, Users, Plus, X, AlertCircle, Radio, BarChart, Download, MessageSquare, Loader2, Paperclip, FileText } from 'lucide-react';
+import { Send, Clock, CheckCircle, BookOpen, Users, Plus, X, AlertCircle, Radio, BarChart, Download, MessageSquare, Loader2, Paperclip, FileText, Trash2 } from 'lucide-react';
 import { SUBJECTS, ALL_STUDENTS, TEACHERS } from '../data/schoolData';
 import { supabase } from '../lib/supabase';
 import './TeacherPortal.css';
@@ -121,6 +121,24 @@ export default function TeacherPortal({ user, addToast, assignments, setAssignme
       addToast({ type: 'danger', title: '❌ Sync Error', msg: 'Failed to post assignment.' });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const deleteAssignment = async (e, assignmentId, attachmentUrl) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to permanently delete this assignment?')) return;
+
+    try {
+      if (attachmentUrl) {
+        const filePath = attachmentUrl.split('/storage/v1/object/public/assignments/')[1];
+        if (filePath) await supabase.storage.from('assignments').remove([filePath]);
+      }
+      const { error } = await supabase.from('assignments').delete().eq('id', assignmentId);
+      if (error) throw error;
+      addToast({ type: 'info', title: '🗑️ Assignment Deleted', msg: 'Removed from Neural Cloud.' });
+    } catch (err) {
+      console.error('Delete error:', err);
+      addToast({ type: 'danger', title: '❌ Error', msg: 'Failed to delete.' });
     }
   };
 
@@ -455,8 +473,17 @@ export default function TeacherPortal({ user, addToast, assignments, setAssignme
                         </div>
                         <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: 6 }}>Division {a.target_division} · Posted {new Date(a.created_at).toLocaleDateString()}</div>
                         
-                        <div className={`status-badge ${submittedCount === 0 ? 'warning' : 'success'}`}>
-                          {submittedCount}/{targetStudents.length} Submitted
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                          <div className={`status-badge ${submittedCount === 0 ? 'warning' : 'success'}`}>
+                            {submittedCount}/{targetStudents.length} Submitted
+                          </div>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: '4px 8px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)', fontSize: '0.7rem' }}
+                            onClick={(e) => deleteAssignment(e, a.id, a.attachment_url)}
+                          >
+                            <Trash2 size={12} /> Delete
+                          </button>
                         </div>
                       </div>
                     </div>

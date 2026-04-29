@@ -3,10 +3,7 @@ import { Clock, CheckCircle, Filter, FileText, Bell, BellOff, AlertCircle, Loade
 import { SUBJECTS } from '../data/schoolData';
 import { supabase } from '../lib/supabase';
 
-const STATIC_TASKS = [
-  { id: 0, title: 'AEC – Practice Problems Ch.3', subject: 'AEC', deadline: '2026-04-25T23:59', target_division: 'C', teacher_name: 'Mr. Ramchandra Popale', static: true },
-  { id: -1, title: 'OOP – Lab Program 5', subject: 'OOP', deadline: '2026-04-28T23:59', target_division: 'C', teacher_name: 'Mrs. Priyanka Bikkad', static: true },
-];
+const STATIC_TASKS = [];
 
 const URGENCY = (deadline) => {
   const diff = (new Date(deadline) - Date.now()) / (1000 * 60 * 60);
@@ -19,6 +16,7 @@ const URGENCY_LABELS = { urgent: '🔴 Due Today', warning: '🟡 Due Soon', nor
 
 export default function TasksPage({ addToast, assignments = [], user, submissions = {}, setSubmissions, reminders = [], setReminders }) {
   const [filter, setFilter] = useState('all');
+  const [selectedSubject, setSelectedSubject] = useState('All');
   const [isSubmitting, setIsSubmitting] = useState(null);
 
   const handleFileUpload = async (taskId, e) => {
@@ -102,7 +100,7 @@ export default function TasksPage({ addToast, assignments = [], user, submission
     ...assignments.filter(a => a.target_division === 'All' || a.target_division === (user?.div || 'C'))
   ];
 
-  const filtered = filter === 'all'
+  let filtered = filter === 'all'
     ? myDivAssignments
     : filter === 'completed'
       ? myDivAssignments.filter(a => submissions[a.id])
@@ -110,10 +108,35 @@ export default function TasksPage({ addToast, assignments = [], user, submission
         ? myDivAssignments.filter(a => !submissions[a.id])
         : myDivAssignments.filter(a => URGENCY(a.deadline) === filter);
 
+  if (selectedSubject !== 'All') {
+    filtered = filtered.filter(a => a.subject === selectedSubject);
+  }
+
+  const subjectsPresent = ['All', ...new Set(myDivAssignments.map(a => a.subject))];
+
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <h1 className="page-title">Tasks & Deadlines</h1>
       <p className="page-subtitle">Division {user?.div || 'C'} – All assignments and submissions from your teachers.</p>
+
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', overflowX: 'auto', paddingBottom: '8px' }}>
+        {subjectsPresent.map(subj => (
+          <button key={subj} onClick={() => setSelectedSubject(subj)}
+            style={{ 
+              padding: '6px 14px', 
+              borderRadius: '20px', 
+              fontSize: '0.75rem', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              background: selectedSubject === subj ? 'rgba(var(--primary-rgb), 0.15)' : 'rgba(var(--invert-rgb), 0.04)',
+              color: selectedSubject === subj ? 'var(--primary)' : '#64748b',
+              border: selectedSubject === subj ? '1px solid var(--primary)' : '1px solid rgba(var(--invert-rgb), 0.08)',
+              transition: 'all 0.2s'
+            }}>
+            {subj === 'All' ? 'All Subjects' : (SUBJECTS[subj]?.name || subj)}
+          </button>
+        ))}
+      </div>
 
       <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', flexWrap: 'wrap' }}>
         {[['all', 'All Tasks'], ['pending', '⏳ Pending'], ['completed', '✅ Completed'], ['urgent', '🔴 Due Today'], ['warning', '🟡 Due Soon']].map(([key, label]) => (
