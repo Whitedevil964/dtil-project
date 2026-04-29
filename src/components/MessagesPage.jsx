@@ -104,7 +104,7 @@ export default function MessagesPage({ user, addToast, profilePics, profilePriva
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id},group_id.neq.null`)
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id},group_id.not.is.null`)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
