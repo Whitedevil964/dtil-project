@@ -4,14 +4,14 @@
   --invert-rgb: 255, 255, 255;
   --invert-dark-rgb: 0, 0, 0;
 
-  --bg-color: #060608;
+  --bg-color: #0a0a12;
   --bg-surface: rgba(18, 18, 24, 0.75);
   --bg-surface-hover: rgba(28, 28, 40, 0.85);
   --border-color: rgba(var(--invert-rgb), 0.08);
   --border-hover: rgba(var(--invert-rgb), 0.15);
   --text-primary: #f1f5f9;
-  --text-secondary: #64748b;
-  --text-muted: #475569;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
 
   --accent-red: #e11d48;
   --accent-red-glow: rgba(225, 29, 72, 0.35);
@@ -46,7 +46,7 @@ html, body, #root {
 
 body {
   font-family: 'Outfit', sans-serif;
-  background-color: var(--bg-color);
+  background: linear-gradient(135deg, #0a0a12 0%, #141420 50%, #0a0a12 100%);
   color: var(--text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -343,6 +343,7 @@ body.light-mode {
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
+  background: #f8fafc;
 }
 
 body.light-mode .login-bg { background: #f1f5f9; }
