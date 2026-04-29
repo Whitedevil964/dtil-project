@@ -104,10 +104,24 @@ export default function App() {
         }
 
         // Fetch submissions
-        const { data: subData } = await supabase.from('submissions').select('*').eq('student_id', user.id);
+        let subQuery = supabase.from('submissions').select('*');
+        if (user.role === 'student') {
+          subQuery = subQuery.eq('student_id', user.id);
+        }
+        // If teacher, we fetch all (can be filtered by teacher_id if we had that mapping, but for demo fetch all is fine)
+        
+        const { data: subData } = await subQuery;
         if (subData) {
           const formatted = {};
-          subData.forEach(s => formatted[s.assignment_id] = s);
+          if (user.role === 'student') {
+            subData.forEach(s => formatted[s.assignment_id] = s);
+          } else {
+            // For teacher, group by assignment_id: { assignmentId: [sub1, sub2, ...] }
+            subData.forEach(s => {
+              if (!formatted[s.assignment_id]) formatted[s.assignment_id] = [];
+              formatted[s.assignment_id].push(s);
+            });
+          }
           setSubmissions(formatted);
         }
       } catch (err) {
@@ -140,9 +154,35 @@ export default function App() {
       })
       .subscribe();
 
+    const subChannel = supabase.channel('submissions-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, payload => {
+        const sub = payload.new;
+        setSubmissions(prev => {
+          const next = { ...prev };
+          if (user.role === 'student') {
+             if (sub.student_id === user.id) next[sub.assignment_id] = sub;
+          } else {
+             // Teacher logic: add to the array for that assignment
+             if (!next[sub.assignment_id]) next[sub.assignment_id] = [];
+             const existingIdx = next[sub.assignment_id].findIndex(s => s.student_id === sub.student_id);
+             if (existingIdx >= 0) {
+               next[sub.assignment_id][existingIdx] = sub;
+             } else {
+               next[sub.assignment_id].push(sub);
+             }
+          }
+          return next;
+        });
+        if (user.role === 'teacher') {
+          addToast({ type: 'info', title: '📂 New Submission', msg: `Student ${sub.student_name} submitted work.` });
+        }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(assignChannel);
       supabase.removeChannel(broadChannel);
+      supabase.removeChannel(subChannel);
     };
   }, [user?.id]);
 
@@ -206,7 +246,7 @@ export default function App() {
     switch (activePage) {
       case 'dashboard':
         return isTeacher
-          ? <TeacherPortal user={user} addToast={addToast} assignments={assignments} setAssignments={setAssignments} attendance={attendance} setAttendance={setAttendance} />
+          ? <TeacherPortal user={user} addToast={addToast} assignments={assignments} setAssignments={setAssignments} attendance={attendance} setAttendance={setAttendance} submissions={submissions} />
           : <Dashboard user={user} addToast={addToast} assignments={assignments} broadcasts={broadcasts} gamification={gamification} />;
       case 'schedule':    return <SchedulePage user={user} />;
       case 'tasks':       return <TasksPage addToast={addToast} assignments={assignments} user={user} submissions={submissions} setSubmissions={setSubmissions} reminders={reminders} setReminders={setReminders} />;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, CheckCircle, Filter, FileText, Bell, BellOff, AlertCircle, Loader2 } from 'lucide-react';
+import { Clock, CheckCircle, Filter, FileText, Bell, BellOff, AlertCircle, Loader2, Download } from 'lucide-react';
 import { SUBJECTS } from '../data/schoolData';
 import { supabase } from '../lib/supabase';
 
@@ -27,15 +27,42 @@ export default function TasksPage({ addToast, assignments = [], user, submission
 
     setIsSubmitting(taskId);
     try {
+      let fileUrl = null;
+      
+      const task = myDivAssignments.find(t => t.id === taskId);
+      const cleanStudentName = user.name.replace(/[^a-z0-9]/gi, '_');
+      const cleanTaskTitle = (task?.title || 'Assignment').replace(/[^a-z0-9]/gi, '_');
+      
+      // 1. Upload file to 'submissions' bucket
+      const fileExt = file.name.split('.').pop();
+      const customFileName = `${cleanStudentName}_${cleanTaskTitle}.${fileExt}`;
+      const filePath = `${user.id}/${Date.now()}_${customFileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('submissions')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('submissions')
+        .getPublicUrl(filePath);
+      
+      fileUrl = publicUrl;
+
+      // 2. Save submission record to database
       const submissionData = {
         assignment_id: String(taskId),
         student_id: user.id,
         student_name: user.name,
         file_name: file.name,
+        file_url: fileUrl,
         status: 'submitted'
       };
 
-      const { error } = await supabase.from('submissions').upsert(submissionData);
+      const { error } = await supabase.from('submissions').upsert(submissionData, {
+        onConflict: 'assignment_id,student_id'
+      });
       
       if (error) throw error;
 
@@ -43,11 +70,12 @@ export default function TasksPage({ addToast, assignments = [], user, submission
         ...prev,
         [taskId]: {
           file_name: file.name,
+          file_url: fileUrl,
           submitted_at: new Date().toISOString()
         }
       }));
 
-      addToast({ type: 'success', title: '✅ Work Submitted', msg: `Successfully uploaded to Neural Cloud: ${file.name}` });
+      addToast({ type: 'success', title: '✅ Work Submitted', msg: `Successfully uploaded: ${file.name}` });
     } catch (err) {
       console.error('Submission error:', err);
       addToast({ type: 'danger', title: '❌ Sync Error', msg: 'Failed to upload work to backend.' });
@@ -141,6 +169,34 @@ export default function TasksPage({ addToast, assignments = [], user, submission
                     <div style={{ fontSize: '0.7rem', color: '#059669', opacity: 0.8, marginTop: '2px' }}>
                       Submitted on {new Date(submission.submitted_at || submission.submittedAt).toLocaleString('en-IN')}
                     </div>
+                  </div>
+                )}
+
+                {task.attachment_url && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <a 
+                      href={task.attachment_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="glass glass-hover"
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '10px', 
+                        padding: '10px 14px', 
+                        borderRadius: '10px', 
+                        color: '#3b82f6', 
+                        fontSize: '0.82rem', 
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        border: '1px solid rgba(59, 130, 246, 0.2)'
+                      }}
+                    >
+                      <Download size={14} /> 
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {task.attachment_name || 'Download Attachment'}
+                      </span>
+                    </a>
                   </div>
                 )}
 

@@ -7,10 +7,10 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, isT
     { id: 'dashboard', label: isTeacher ? 'Teacher Portal' : 'Dashboard', icon: isTeacher ? ShieldCheck : LayoutDashboard },
     { id: 'schedule',  label: 'Schedule',           icon: Calendar },
     { id: 'tasks',     label: isTeacher ? 'Student Tasks' : 'Tasks & Deadlines', icon: CheckSquare },
-    { id: 'attendance', label: 'Attendance',        icon: ShieldCheck },
+    { id: 'attendance', label: 'Attendance',        icon: ShieldCheck, hide: isTeacher },
     { id: 'messages',  label: 'Messages',            icon: MessageSquare },
     { id: 'settings',  label: 'Settings',            icon: Settings },
-  ];
+  ].filter(item => !item.hide);
   return (
     <aside className={`sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
       <div className="sidebar-brand">

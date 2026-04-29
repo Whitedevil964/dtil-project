@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Send, Clock, CheckCircle, BookOpen, Users, Plus, X, AlertCircle, Radio, BarChart, Download, MessageSquare, Loader2 } from 'lucide-react';
+import { Send, Clock, CheckCircle, BookOpen, Users, Plus, X, AlertCircle, Radio, BarChart, Download, MessageSquare, Loader2, Paperclip, FileText } from 'lucide-react';
 import { SUBJECTS, ALL_STUDENTS, TEACHERS } from '../data/schoolData';
 import { supabase } from '../lib/supabase';
 import './TeacherPortal.css';
 
-export default function TeacherPortal({ user, addToast, assignments, setAssignments, attendance, setAttendance }) {
+export default function TeacherPortal({ user, addToast, assignments, setAssignments, attendance, setAttendance, submissions = {} }) {
   const [activeTab, setActiveTab] = useState('assignments');
   const [form, setForm] = useState({ title: '', subject: '', deadline: '', description: '', divTarget: 'C' });
   const [attDate, setAttDate] = useState(new Date().toISOString().split('T')[0]);
@@ -13,6 +13,8 @@ export default function TeacherPortal({ user, addToast, assignments, setAssignme
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [expandedAssignmentId, setExpandedAssignmentId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   const currentStudents = ALL_STUDENTS.filter(s => s.div === attDiv);
   
@@ -67,7 +69,30 @@ export default function TeacherPortal({ user, addToast, assignments, setAssignme
     if (!form.title || !form.subject || !form.deadline) return;
     
     setIsSaving(true);
+    setUploadProgress(0);
     try {
+      let attachmentUrl = null;
+      let attachmentName = null;
+
+      if (selectedFile) {
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${user.id}/${Date.now()}_${fileName}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('assignments')
+          .upload(filePath, selectedFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('assignments')
+          .getPublicUrl(filePath);
+
+        attachmentUrl = publicUrl;
+        attachmentName = selectedFile.name;
+      }
+
       const newA = {
         title: form.title,
         subject: form.subject,
@@ -75,7 +100,9 @@ export default function TeacherPortal({ user, addToast, assignments, setAssignme
         description: form.description,
         target_division: form.divTarget,
         posted_by: user.id,
-        teacher_name: user.name
+        teacher_name: user.name,
+        attachment_url: attachmentUrl,
+        attachment_name: attachmentName
       };
 
       const { data, error } = await supabase.from('assignments').insert([newA]).select();
@@ -86,6 +113,8 @@ export default function TeacherPortal({ user, addToast, assignments, setAssignme
         setAssignments(prev => [data[0], ...prev]);
         addToast({ type: 'success', title: '📋 Assignment Sent!', msg: `"${form.title}" sent to Division ${form.divTarget}` });
         setForm({ title: '', subject: '', deadline: '', description: '', divTarget: 'C' });
+        setSelectedFile(null);
+        setUploadProgress(0);
       }
     } catch (err) {
       console.error('Assignment error:', err);
@@ -244,6 +273,36 @@ export default function TeacherPortal({ user, addToast, assignments, setAssignme
                 <textarea rows={4} placeholder="Assignment details, reference chapters, submission format..."
                   value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
               </div>
+
+              <div className="tp-field">
+                <label>Attachment (PDF, DOCX, PPTX, Photo)</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="file"
+                    id="file-upload"
+                    hidden
+                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
+                  />
+                  <label htmlFor="file-upload" className="glass glass-hover" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    color: selectedFile ? '#10b981' : '#94a3b8',
+                    border: selectedFile ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(var(--invert-rgb), 0.08)',
+                    fontSize: '0.85rem'
+                  }}>
+                    {selectedFile ? <FileText size={18} /> : <Paperclip size={18} />}
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      {selectedFile ? selectedFile.name : 'Choose file to attach (Optional)'}
+                    </span>
+                    {selectedFile && <button type="button" onClick={(e) => { e.preventDefault(); setSelectedFile(null); }} style={{ background: 'transparent', border: 'none', color: '#ef4444' }}><X size={16} /></button>}
+                  </label>
+                </div>
+              </div>
               <button type="submit" className="btn btn-primary" disabled={isSaving} style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
                 {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />} 
                 {isSaving ? ' Sending...' : ` Send to Division ${form.divTarget}`}
@@ -371,14 +430,10 @@ export default function TeacherPortal({ user, addToast, assignments, setAssignme
                 const subj = SUBJECTS[a.subject];
                 const isExpanded = expandedAssignmentId === a.id;
                 
-                // Deterministic mock data for submissions
+                // Actual submission data
                 const targetStudents = ALL_STUDENTS.filter(s => s.div === a.target_division);
-                const submittedStudents = [];
-                const pendingStudents = [];
-                // Simplified for now, in a real app you'd fetch submissions
-                targetStudents.forEach(s => {
-                   pendingStudents.push(s);
-                });
+                const actualSubmissions = submissions[a.id] || [];
+                const submittedCount = actualSubmissions.length;
 
                 return (
                   <div key={a.id} className="glass glass-hover" style={{ padding: '18px 20px', borderLeft: `4px solid ${subj?.color || '#64748b'}`, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 12 }}
@@ -388,6 +443,11 @@ export default function TeacherPortal({ user, addToast, assignments, setAssignme
                         <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 4 }}>{a.title}</div>
                         <div style={{ color: subj?.color, fontSize: '0.8rem', fontWeight: 600, marginBottom: 6 }}>{a.subject} – {subj?.name}</div>
                         {a.description && <div style={{ color: '#64748b', fontSize: '0.82rem', marginBottom: 8 }}>{a.description}</div>}
+                        {a.attachment_url && (
+                          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: '#3b82f6' }}>
+                            <Paperclip size={12} /> Attachment: <a href={a.attachment_url} target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>{a.attachment_name}</a>
+                          </div>
+                        )}
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.78rem', color: '#ef4444', fontWeight: 600, marginBottom: 4 }}>
@@ -395,17 +455,34 @@ export default function TeacherPortal({ user, addToast, assignments, setAssignme
                         </div>
                         <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: 6 }}>Division {a.target_division} · Posted {new Date(a.created_at).toLocaleDateString()}</div>
                         
-                        <div className={`status-badge warning`}>
-                          0/{targetStudents.length} Submitted
+                        <div className={`status-badge ${submittedCount === 0 ? 'warning' : 'success'}`}>
+                          {submittedCount}/{targetStudents.length} Submitted
                         </div>
                       </div>
                     </div>
 
                     {isExpanded && (
                       <div style={{ marginTop: 10, paddingTop: 16, borderTop: '1px solid rgba(var(--invert-rgb), 0.1)', cursor: 'default' }} onClick={e => e.stopPropagation()}>
-                        <div style={{ textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
-                          Real-time submission tracking active. Waiting for student uploads...
-                        </div>
+                        {actualSubmissions.length === 0 ? (
+                          <div style={{ textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+                            Real-time submission tracking active. Waiting for student uploads...
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 4 }}>Recent Submissions</div>
+                            {actualSubmissions.map(sub => (
+                              <div key={sub.student_id} className="glass" style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                  <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{sub.student_name}</div>
+                                  <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{new Date(sub.created_at).toLocaleString()}</div>
+                                </div>
+                                <a href={sub.file_url} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>
+                                  <Download size={12} /> View Work
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
