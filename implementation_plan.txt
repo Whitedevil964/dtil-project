@@ -1,0 +1,143 @@
+# Implementation Plan - Real-Time Backend Integration with Supabase
+
+The DTIL Neural Core currently relies on `localStorage` and local state, which prevents data synchronization between different users and devices. This plan outlines the integration of Supabase to provide a persistent, real-time backend.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Step 1: Manual Project Setup**
+> You must manually create a Supabase project at [supabase.com](https://supabase.com).
+> 1. Create a new project named "dtil-neural-core".
+> 2. Copy the **Project URL** and **anon/public key** from Settings → API.
+> 3. Create a `.env` file in the project root with:
+>    ```env
+>    VITE_SUPABASE_URL=your_project_url
+>    VITE_SUPABASE_ANON_KEY=your_anon_key
+>    ```
+
+> [!IMPORTANT]
+> **Step 2: Database Schema**
+> Run the following SQL in your Supabase SQL Editor:
+> ```sql
+> -- MESSAGES TABLE
+> create table messages (
+>   id uuid default gen_random_uuid() primary key,
+>   created_at timestamp with time zone default now(),
+>   sender_id text not null,
+>   sender_name text not null,
+>   sender_role text not null,
+>   receiver_id text,
+>   receiver_name text,
+>   group_id text,
+>   content text not null,
+>   message_type text default 'direct',
+>   is_read boolean default false,
+>   attachment_url text
+> );
+>
+> -- ASSIGNMENTS TABLE  
+> create table assignments (
+>   id uuid default gen_random_uuid() primary key,
+>   created_at timestamp with time zone default now(),
+>   title text not null,
+>   subject text not null,
+>   description text,
+>   deadline timestamp with time zone,
+>   teacher_id text not null,
+>   teacher_name text not null,
+>   target_division text not null,
+>   attachment_url text,
+>   total_students integer default 0
+> );
+>
+> -- ASSIGNMENT SUBMISSIONS TABLE
+> create table submissions (
+>   id uuid default gen_random_uuid() primary key,
+>   created_at timestamp with time zone default now(),
+>   assignment_id uuid references assignments(id),
+>   student_id text not null,
+>   student_name text not null,
+>   student_roll text,
+>   submission_text text,
+>   attachment_url text,
+>   submitted_at timestamp with time zone default now(),
+>   status text default 'submitted'
+> );
+>
+> -- BROADCASTS TABLE
+> create table broadcasts (
+>   id uuid default gen_random_uuid() primary key,
+>   created_at timestamp with time zone default now(),
+>   teacher_id text not null,
+>   teacher_name text not null,
+>   message text not null,
+>   priority text default 'normal',
+>   target_division text not null,
+>   is_active boolean default true
+> );
+>
+> -- ATTENDANCE TABLE
+> create table attendance (
+>   id uuid default gen_random_uuid() primary key,
+>   created_at timestamp with time zone default now(),
+>   student_id text not null,
+>   student_name text not null,
+>   subject text not null,
+>   date date not null,
+>   status text not null,
+>   teacher_id text not null,
+>   division text not null
+> );
+>
+> -- Enable Row Level Security but allow all for now (demo)
+> alter table messages enable row level security;
+> alter table assignments enable row level security;
+> alter table submissions enable row level security;
+> alter table broadcasts enable row level security;
+> alter table attendance enable row level security;
+>
+> -- Allow all operations for anon users (demo/development)
+> create policy "Allow all" on messages for all using (true);
+> create policy "Allow all" on assignments for all using (true);
+> create policy "Allow all" on submissions for all using (true);
+> create policy "Allow all" on broadcasts for all using (true);
+> create policy "Allow all" on attendance for all using (true);
+>
+> -- Enable realtime for all tables
+> alter publication supabase_realtime add table messages;
+> alter publication supabase_realtime add table assignments;
+> alter publication supabase_realtime add table submissions;
+> alter publication supabase_realtime add table broadcasts;
+> ```
+
+## Proposed Changes
+
+### Core Integration
+#### [NEW] [supabase.js](file:///d:/Codes/Project/DTIL/dtil-project/src/lib/supabase.js)
+Initialize the Supabase client using environment variables.
+
+### Feature Updates
+#### [MODIFY] [MessagesPage.jsx](file:///d:/Codes/Project/DTIL/dtil-project/src/components/MessagesPage.jsx)
+- Replace the `globalChats` state/prop logic with Supabase `messages` table queries.
+- Implement real-time listening for new messages using `supabase.channel()`.
+
+#### [MODIFY] [TeacherPortal.jsx](file:///d:/Codes/Project/DTIL/dtil-project/src/components/TeacherPortal.jsx)
+- Update `markAttendance`, `sendAssignment`, and `sendBroadcast` functions to insert data into Supabase.
+
+#### [MODIFY] [DashboardPage.jsx](file:///d:/Codes/Project/DTIL/dtil-project/src/pages/DashboardPage.jsx)
+- Replace static `ANNOUNCEMENTS` data with real-time broadcasts from Supabase.
+
+#### [MODIFY] [TasksPage.jsx](file:///d:/Codes/Project/DTIL/dtil-project/src/components/TasksPage.jsx)
+- Fetch assignments from Supabase and handle student submissions.
+
+## Verification Plan
+
+### Automated Tests
+1. **Message Sync Test**: Use a browser subagent to log in as two different users and verify that messages sent from one appear on the other's screen instantly.
+2. **Assignment Delivery Test**: Verify that a teacher creating an assignment results in it appearing on the student's task list.
+3. **Broadcast Notification Test**: Verify that a teacher's broadcast triggers a real-time notification on the student's dashboard.
+
+### Manual Verification
+1. Verify that data persists after page refreshes.
+2. Verify cross-browser synchronization (Open the app in two different browsers).
+3. Final check after deploying to Vercel with environment variables.

@@ -637,3 +637,69 @@ body.light-mode .bubble-received { background: rgba(0,0,0,0.04); }
   box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
 }
 
+
+/* ===================== */
+/*   NEURAL UI ENHANCEMENTS */
+/* ===================== */
+.offline-top-banner {
+  background: #f59e0b;
+  color: #fff;
+  padding: 6px 12px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  z-index: 10001;
+}
+
+.skeleton-pulse {
+  background: rgba(var(--invert-rgb), 0.05);
+  background-image: linear-gradient(
+    90deg,
+    rgba(var(--invert-rgb), 0),
+    rgba(var(--invert-rgb), 0.08),
+    rgba(var(--invert-rgb), 0)
+  );
+  background-size: 200px 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.att-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.att-radio input {
+  display: none;
+}
+
+.att-radio-label {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.att-radio input:checked + .att-radio-label {
+  opacity: 1;
+  border-color: currentColor;
+  background: rgba(var(--invert-rgb), 0.05);
+}
+
+.att-p { color: #10b981; }
+.att-a { color: #ef4444; }
+.att-l { color: #f59e0b; }

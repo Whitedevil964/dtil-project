@@ -27,7 +27,7 @@ function getTimeOfDay() {
   return 'Evening';
 }
 
-export default function Dashboard({ user, addToast, assignments }) {
+export default function Dashboard({ user, addToast, assignments, broadcasts = [] }) {
   const userDiv = user?.div || 'C';
   const rawUserSchedule = ALL_DIV_SCHEDULES[userDiv] || ALL_DIV_SCHEDULES['C'];
   const userBatch = user?.batch || `${userDiv}1`;
@@ -37,7 +37,8 @@ export default function Dashboard({ user, addToast, assignments }) {
   const dayLabel = ['Monday','Tuesday','Wednesday','Thursday','Friday'][Math.min(Math.max(TODAY_IDX, 0), 4)];
   const divInfo = DIVISIONS[userDiv];
 
-  const pendingAssignments = assignments ? assignments.filter(a => a.divTarget === userDiv) : [];
+  const pendingAssignments = assignments ? assignments.filter(a => a.target_division === userDiv || a.target_division === 'All') : [];
+  const myBroadcasts = broadcasts.filter(b => b.target_division === userDiv || b.target_division === 'All');
 
   const [nextClassInfo, setNextClassInfo] = useState('No more classes today');
   const [showGPACalc, setShowGPACalc] = useState(false);
@@ -78,6 +79,15 @@ export default function Dashboard({ user, addToast, assignments }) {
     return () => clearInterval(timer);
   }, [userSchedule]);
 
+  const showLatestBroadcasts = () => {
+    if (myBroadcasts.length === 0) {
+      addToast({ type: 'info', title: 'Neural Alerts', msg: 'No active broadcasts at this moment.' });
+      return;
+    }
+    const latest = myBroadcasts[0];
+    addToast({ type: 'success', title: `📡 ${latest.teacher_name}`, msg: latest.message });
+  };
+
   return (
     <div className="dashboard">
       <div className="dash-greeting">
@@ -92,7 +102,7 @@ export default function Dashboard({ user, addToast, assignments }) {
       <div className="quick-actions-bar">
         <button className="btn btn-ghost glass" onClick={() => window.location.hash = '#schedule'}><Calendar size={14} /> Full Schedule</button>
         <button className="btn btn-ghost glass" onClick={() => setShowGPACalc(true)}><Zap size={14} /> GPA Calculator</button>
-        <button className="btn btn-ghost glass" onClick={() => addToast({ type:'info', title:'Neural Comm', msg:'Opening secure messaging link...' })}><Bell size={14} /> Open Alerts</button>
+        <button className="btn btn-ghost glass" onClick={showLatestBroadcasts}><Bell size={14} /> Neural Alerts</button>
       </div>
 
       {/* Stats */}
@@ -100,7 +110,7 @@ export default function Dashboard({ user, addToast, assignments }) {
         {[
           { label: nextClassInfo.includes('starts in') ? 'Next Class In' : 'Status', value: nextClassInfo.includes('starts in') ? nextClassInfo.split('in ')[1] : 'Finished', subLabel: nextClassInfo.split(' · ')[0], icon: Clock, color: '#8b5cf6' },
           { label: 'Pending Tasks', value: `${pendingAssignments.length}`, icon: AlertCircle, color: '#ef4444' },
-          { label: 'Neural Alerts', value: '2', icon: Bell, color: '#f59e0b', onClick: () => addToast({ type: 'info', title: 'Neural Alerts', msg: '1. New physics lecture notes uploaded. 2. Lab session rescheduled to Block 102.' }) },
+          { label: 'Neural Alerts', value: `${myBroadcasts.length}`, icon: Bell, color: '#f59e0b', onClick: showLatestBroadcasts },
           { label: 'Attendance %', value: '91%', icon: Users, color: '#10b981' },
         ].map(s => (
           <div key={s.label} className="stat-card glass glass-hover" onClick={s.onClick} style={{ cursor: s.onClick ? 'pointer' : 'default' }}>
@@ -194,7 +204,7 @@ export default function Dashboard({ user, addToast, assignments }) {
                   </div>
                   <p className="task-item-course">{SUBJECTS[a.subject]?.name}</p>
                   <div className="task-item-footer">
-                    <span className="task-due urgent"><Clock size={12} />Due: {a.deadline}</span>
+                    <span className="task-due urgent"><Clock size={12} />Due: {new Date(a.deadline).toLocaleDateString()}</span>
                     <button className="btn btn-primary" style={{ padding: '4px 10px', fontSize: '0.75rem' }}
                       onClick={() => addToast({ type: 'success', title: 'Submission Portal', msg: `Submitting: ${a.title}` })}>
                       Submit
@@ -203,6 +213,23 @@ export default function Dashboard({ user, addToast, assignments }) {
                 </div>
               ))}
             </div>
+          )}
+
+          {/* Broadcasts Section */}
+          {myBroadcasts.length > 0 && (
+            <>
+              <div className="section-title" style={{marginTop: 20}}>Neural Broadcasts</div>
+              <div className="glass" style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {myBroadcasts.slice(0, 3).map((b, i) => (
+                  <div key={i} className="broadcast-item" style={{ fontSize: '0.82rem', padding: '10px', background: 'rgba(var(--invert-rgb), 0.05)', borderRadius: '8px' }}>
+                    <div style={{ fontWeight: 700, color: b.priority === 'urgent' ? '#ef4444' : '#f59e0b', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Radio size={12} /> {b.teacher_name}
+                    </div>
+                    <p style={{ color: '#f1f5f9', margin: 0 }}>{b.message}</p>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* Subjects taught in Div */}
@@ -293,3 +320,4 @@ export default function Dashboard({ user, addToast, assignments }) {
     </div>
   );
 }
+

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, Bell, X, Menu } from 'lucide-react';
 import './Header.css';
 
-export default function Header({ user, addToast, profilePics, mobileMenuOpen, setMobileMenuOpen }) {
+export default function Header({ user, addToast, profilePics, mobileMenuOpen, setMobileMenuOpen, broadcastCount = 0 }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchVal, setSearchVal] = useState('');
 
@@ -50,7 +50,7 @@ export default function Header({ user, addToast, profilePics, mobileMenuOpen, se
             onClick={() => setNotifOpen(!notifOpen)}
           >
             <Bell size={20} />
-            <span className="notif-badge">4</span>
+            {broadcastCount > 0 && <span className="notif-badge">{broadcastCount}</span>}
           </button>
 
           {notifOpen && (
@@ -89,3 +89,4 @@ export default function Header({ user, addToast, profilePics, mobileMenuOpen, se
     </header>
   );
 }
+

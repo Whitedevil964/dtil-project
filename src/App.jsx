@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { WifiOff } from 'lucide-react';
 import HomePage from './pages/HomePage';
 import LoginPage from './components/LoginPage';
 import Sidebar from './components/Sidebar';
@@ -13,9 +14,9 @@ import AttendancePage from './components/AttendancePage';
 import AIChat from './components/AIChat';
 import ToastContainer from './components/ToastContainer';
 import { ALL_STUDENTS, TEACHERS } from './data/schoolData';
+import { supabase } from './lib/supabase';
 
 export default function App() {
-  // Trigger HMR
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('DYPCOEI_USER')) || null; } catch { return null; }
   });
@@ -23,39 +24,27 @@ export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
-  const [lastSeenMsgs, setLastSeenMsgs] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('DYPCOEI_LAST_SEEN_MSGS')) || {}; } catch { return {}; }
-  });
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
+  // Profile data (keeping in localStorage for now)
   const [profilePics, setProfilePics] = useState(() => {
     try { return JSON.parse(localStorage.getItem('DYPCOEI_PROFILE_PICS')) || {}; } catch { return {}; }
   });
-
   const [profilePrivacy, setProfilePrivacy] = useState(() => {
     try { return JSON.parse(localStorage.getItem('DYPCOEI_PROFILE_PRIVACY')) || {}; } catch { return {}; }
   });
-
   const [groups, setGroups] = useState(() => {
     try { return JSON.parse(localStorage.getItem('DYPCOEI_GROUPS')) || []; } catch { return []; }
   });
-
   const [blockedUsers, setBlockedUsers] = useState(() => {
     try { return JSON.parse(localStorage.getItem('DYPCOEI_BLOCKED')) || {}; } catch { return {}; }
   });
 
-  // Shared state across teacher → student (Persistent)
-  const [assignments, setAssignments] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('DYPCOEI_APP_ASSIGNMENTS')) || []; } catch { return []; }
-  });
-  const [attendance, setAttendance] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('DYPCOEI_APP_ATTENDANCE')) || {}; } catch { return {}; }
-  });
-  const [globalChats, setGlobalChats] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('DYPCOEI_APP_CHATS')) || {}; } catch { return {}; }
-  });
-  const [submissions, setSubmissions] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('DYPCOEI_SUBMISSIONS') || '{}'); } catch { return {}; }
-  });
+  // Supabase Backend State
+  const [assignments, setAssignments] = useState([]);
+  const [attendance, setAttendance] = useState({});
+  const [broadcasts, setBroadcasts] = useState([]);
+  const [submissions, setSubmissions] = useState({});
   const [reminders, setReminders] = useState(() => {
     try { return JSON.parse(localStorage.getItem('DYPCOEI_REMINDERS') || '[]'); } catch { return []; }
   });
@@ -66,27 +55,101 @@ export default function App() {
     return saved ? JSON.parse(saved) : { streak: 0, xp: 0, lastLogin: null, rank: 'Cadet' };
   });
 
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // PERSISTENCE EFFECT (localStorage as cache)
   useEffect(() => { localStorage.setItem('DYPCOEI_GAMIFICATION', JSON.stringify(gamification)); }, [gamification]);
-  useEffect(() => { localStorage.setItem('DYPCOEI_APP_ASSIGNMENTS', JSON.stringify(assignments)); }, [assignments]);
-  useEffect(() => { localStorage.setItem('DYPCOEI_APP_ATTENDANCE', JSON.stringify(attendance)); }, [attendance]);
-  useEffect(() => { localStorage.setItem('DYPCOEI_APP_CHATS', JSON.stringify(globalChats)); }, [globalChats]);
   useEffect(() => { localStorage.setItem('DYPCOEI_PROFILE_PICS', JSON.stringify(profilePics)); }, [profilePics]);
   useEffect(() => { localStorage.setItem('DYPCOEI_PROFILE_PRIVACY', JSON.stringify(profilePrivacy)); }, [profilePrivacy]);
   useEffect(() => { localStorage.setItem('DYPCOEI_GROUPS', JSON.stringify(groups)); }, [groups]);
   useEffect(() => { localStorage.setItem('DYPCOEI_BLOCKED', JSON.stringify(blockedUsers)); }, [blockedUsers]);
-  useEffect(() => { localStorage.setItem('DYPCOEI_SUBMISSIONS', JSON.stringify(submissions)); }, [submissions]);
   useEffect(() => { localStorage.setItem('DYPCOEI_REMINDERS', JSON.stringify(reminders)); }, [reminders]);
   useEffect(() => { 
     if (user) localStorage.setItem('DYPCOEI_USER', JSON.stringify(user));
     else localStorage.removeItem('DYPCOEI_USER');
   }, [user]);
 
-  // Manual Routing & Redirects
+  // INITIAL SUPABASE FETCH
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchData = async () => {
+      try {
+        // Fetch assignments
+        const { data: assignData } = await supabase.from('assignments').select('*').order('created_at', { ascending: false });
+        if (assignData) setAssignments(assignData);
+
+        // Fetch broadcasts
+        const { data: broadData } = await supabase.from('broadcasts').select('*').eq('is_active', true).order('created_at', { ascending: false });
+        if (broadData) setBroadcasts(broadData);
+
+        // Fetch attendance (simplified for demo)
+        const { data: attData } = await supabase.from('attendance').select('*').eq('student_id', user.id);
+        if (attData) {
+          const formatted = {};
+          attData.forEach(a => {
+            if (!formatted[a.date]) formatted[a.date] = {};
+            formatted[a.date][a.student_id] = a.status;
+          });
+          setAttendance(formatted);
+        }
+
+        // Fetch submissions
+        const { data: subData } = await supabase.from('submissions').select('*').eq('student_id', user.id);
+        if (subData) {
+          const formatted = {};
+          subData.forEach(s => formatted[s.assignment_id] = s);
+          setSubmissions(formatted);
+        }
+      } catch (err) {
+        console.error('Fetch error:', err);
+      }
+    };
+
+    fetchData();
+
+    // REAL-TIME SUBSCRIPTIONS
+    const assignChannel = supabase.channel('assignments-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'assignments' }, payload => {
+        const newA = payload.new;
+        if (newA.target_division === 'All' || newA.target_division === user.div) {
+          setAssignments(prev => [newA, ...prev]);
+          if (user.role === 'student') {
+            addToast({ type: 'danger', title: '🆕 New Assignment!', msg: `${newA.title} (${newA.subject}) posted. Due: ${new Date(newA.deadline).toLocaleDateString('en-IN')}` });
+          }
+        }
+      })
+      .subscribe();
+
+    const broadChannel = supabase.channel('broadcasts-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'broadcasts' }, payload => {
+        const newB = payload.new;
+        if (newB.target_division === 'All' || newB.target_division === user.div) {
+          setBroadcasts(prev => [newB, ...prev]);
+          addToast({ type: 'success', title: '📡 Neural Broadcast', msg: `${newB.teacher_name}: ${newB.message}` });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(assignChannel);
+      supabase.removeChannel(broadChannel);
+    };
+  }, [user?.id]);
+
+  // Manual Routing
   useEffect(() => {
     const handlePopState = () => setCurrentPath(window.location.pathname);
     window.addEventListener('popstate', handlePopState);
-    
-    // Initial Redirect Logic
     const path = window.location.pathname;
     if (user && (path === '/' || path === '/login')) {
       window.history.pushState({}, '', '/dashboard');
@@ -95,32 +158,13 @@ export default function App() {
       window.history.pushState({}, '', '/login');
       setCurrentPath('/login');
     }
-
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [user]);
 
   const navigate = (path) => {
     window.history.pushState({}, '', path);
     setCurrentPath(path);
   };
-
-  useEffect(() => {
-    const handleStorage = (e) => {
-      try {
-        if (e.key === 'DYPCOEI_APP_CHATS' && e.newValue) setGlobalChats(JSON.parse(e.newValue));
-        if (e.key === 'DYPCOEI_APP_ASSIGNMENTS' && e.newValue) setAssignments(JSON.parse(e.newValue));
-        if (e.key === 'DYPCOEI_APP_ATTENDANCE' && e.newValue) setAttendance(JSON.parse(e.newValue));
-        if (e.key === 'DYPCOEI_PROFILE_PICS' && e.newValue) setProfilePics(JSON.parse(e.newValue));
-        if (e.key === 'DYPCOEI_PROFILE_PRIVACY' && e.newValue) setProfilePrivacy(JSON.parse(e.newValue));
-        if (e.key === 'DYPCOEI_GROUPS' && e.newValue) setGroups(JSON.parse(e.newValue));
-        if (e.key === 'DYPCOEI_BLOCKED' && e.newValue) setBlockedUsers(JSON.parse(e.newValue));
-        if (e.key === 'DYPCOEI_SUBMISSIONS' && e.newValue) setSubmissions(JSON.parse(e.newValue));
-        if (e.key === 'DYPCOEI_REMINDERS' && e.newValue) setReminders(JSON.parse(e.newValue));
-      } catch (err) { console.error('Sync error', err); }
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
 
   const addToast = (toast) => {
     const uid = Date.now() + Math.random();
@@ -147,85 +191,15 @@ export default function App() {
       return { ...prev, streak: newStreak, xp: newXP, lastLogin: today, rank: newRank };
     });
     setActivePage('dashboard');
-    if (window.location.pathname !== '/dashboard') {
-      navigate('/dashboard');
-    }
-  }, [user]);
+  }, [user?.id]);
 
-  useEffect(() => {
-    if (assignments.length === 0) return;
-    const latest = assignments[0];
-    if (user?.role === 'student') {
-      addToast({ type: 'danger', title: '🆕 New Assignment!', msg: `${latest.title} (${latest.subject}) posted by ${latest.postedBy}. Due: ${new Date(latest.deadline).toLocaleDateString('en-IN')}` });
-    }
-  }, [assignments]);
-
-  const prevChatsRef = useRef(globalChats);
-  useEffect(() => {
-    if (!user) {
-      prevChatsRef.current = globalChats;
-      return;
-    }
-    Object.keys(globalChats).forEach(key => {
-      const ids = key.split('_chat_');
-      if (ids.includes(String(user.id))) {
-        const currentMsgs = globalChats[key] || [];
-        const prevMsgs = prevChatsRef.current[key] || [];
-        if (currentMsgs.length > prevMsgs.length) {
-          const latestMsg = currentMsgs[currentMsgs.length - 1];
-          if (String(latestMsg.from) !== String(user.id)) {
-            const senderId = ids[0] === String(user.id) ? ids[1] : ids[0];
-            let senderName = 'Someone';
-            const t = Object.values(TEACHERS || {}).find(t => String(t?.id) === String(senderId));
-            if (t) senderName = t.name;
-            else {
-              const s = (ALL_STUDENTS || []).find(s => String(s?.id) === String(senderId));
-              if (s) senderName = s.name;
-            }
-            if (activePage !== 'messages') {
-               addToast({ type: 'success', title: `💬 New Message`, msg: `${senderName}: ${latestMsg.text}` });
-            }
-          }
-        }
-      }
-    });
-    prevChatsRef.current = globalChats;
-  }, [globalChats, user, activePage]);
-
-  const unreadMessageCount = useMemo(() => {
-    if (!user) return 0;
-    const lastSeen = lastSeenMsgs[user.id] || 0;
-    let count = 0;
-    Object.keys(globalChats).forEach(key => {
-      const ids = key.split('_chat_');
-      if (ids.includes(String(user.id))) {
-        const msgs = globalChats[key] || [];
-        msgs.forEach(m => {
-          if (String(m.from) !== String(user.id) && m.timestamp > lastSeen) count++;
-        });
-      }
-    });
-    return count;
-  }, [globalChats, user, lastSeenMsgs]);
-
-  useEffect(() => {
-    if (activePage === 'messages' && user) {
-      const newSeen = { ...lastSeenMsgs, [user.id]: Date.now() };
-      setLastSeenMsgs(newSeen);
-      localStorage.setItem('DYPCOEI_LAST_SEEN_MSGS', JSON.stringify(newSeen));
-    }
-  }, [activePage, user, globalChats]);
-
-  useEffect(() => {
-    if (user && unreadMessageCount > 0 && activePage !== 'messages') {
-       addToast({ type: 'info', title: '💬 Unread Messages', msg: `You have ${unreadMessageCount} new message(s) waiting for you in your inbox.` });
-    }
-  }, [user]);
+  const unreadBroadcastCount = broadcasts.length; // Simplified for bell icon
 
   if (!user) {
     if (currentPath === '/') return <HomePage onLogin={() => navigate('/login')} />;
     return <LoginPage onLogin={setUser} />;
   }
+
   const isTeacher = user.role === 'teacher';
 
   const renderPage = () => {
@@ -233,19 +207,24 @@ export default function App() {
       case 'dashboard':
         return isTeacher
           ? <TeacherPortal user={user} addToast={addToast} assignments={assignments} setAssignments={setAssignments} attendance={attendance} setAttendance={setAttendance} />
-          : <Dashboard user={user} addToast={addToast} assignments={assignments} gamification={gamification} />;
+          : <Dashboard user={user} addToast={addToast} assignments={assignments} broadcasts={broadcasts} gamification={gamification} />;
       case 'schedule':    return <SchedulePage user={user} />;
       case 'tasks':       return <TasksPage addToast={addToast} assignments={assignments} user={user} submissions={submissions} setSubmissions={setSubmissions} reminders={reminders} setReminders={setReminders} />;
-      case 'messages':    return <MessagesPage user={user} globalChats={globalChats} setGlobalChats={setGlobalChats} profilePics={profilePics} profilePrivacy={profilePrivacy} groups={groups} setGroups={setGroups} blockedUsers={blockedUsers} setBlockedUsers={setBlockedUsers} />;
+      case 'messages':    return <MessagesPage user={user} profilePics={profilePics} profilePrivacy={profilePrivacy} groups={groups} setGroups={setGroups} blockedUsers={blockedUsers} setBlockedUsers={setBlockedUsers} />;
       case 'attendance':  return <AttendancePage user={user} />;
       case 'settings':    return <SettingsPage user={user} profilePics={profilePics} setProfilePics={setProfilePics} profilePrivacy={profilePrivacy} setProfilePrivacy={setProfilePrivacy} gamification={gamification} addToast={addToast} />;
-      default:            return <Dashboard user={user} addToast={addToast} assignments={assignments} gamification={gamification} />;
+      default:            return <Dashboard user={user} addToast={addToast} assignments={assignments} broadcasts={broadcasts} gamification={gamification} />;
     }
   };
 
   return (
     <>
       <div className="app-shell">
+        {isOffline && (
+          <div className="offline-top-banner">
+            <WifiOff size={14} /> Neural Sync Offline — showing cached data
+          </div>
+        )}
         {mobileMenuOpen && (
           <div className="mobile-overlay" onClick={() => setMobileMenuOpen(false)} />
         )}
@@ -255,7 +234,6 @@ export default function App() {
           user={user} 
           onLogout={() => { setUser(null); setActivePage('dashboard'); navigate('/'); }} 
           isTeacher={isTeacher} 
-          unreadMessageCount={unreadMessageCount} 
           profilePics={profilePics} 
           mobileMenuOpen={mobileMenuOpen}
           setMobileMenuOpen={setMobileMenuOpen}
@@ -267,6 +245,7 @@ export default function App() {
             profilePics={profilePics} 
             mobileMenuOpen={mobileMenuOpen}
             setMobileMenuOpen={setMobileMenuOpen}
+            broadcastCount={unreadBroadcastCount}
           />
           <div className="page-content fade-in" key={activePage}>{renderPage()}</div>
         </div>
@@ -276,3 +255,4 @@ export default function App() {
     </>
   );
 }
+
