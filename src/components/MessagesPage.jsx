@@ -532,31 +532,32 @@ export default function MessagesPage({ user, addToast, profilePics, profilePriva
                         </div>
                       )}
                       <div className={`bubble ${isMe ? 'bubble-sent' : 'bubble-received'}`} style={{ 
-                        maxWidth: '70%', 
-                        padding: '10px 14px', 
-                        borderRadius: '18px', 
+                        maxWidth: '85%', 
+                        minWidth: '80px',
+                        padding: '8px 12px', 
+                        borderRadius: '16px', 
                         position: 'relative', 
-                        paddingBottom: '20px',
                         background: isMe ? 'var(--primary)' : 'rgba(var(--invert-rgb), 0.05)',
                         color: isMe ? '#fff' : 'var(--text-primary)',
-                        boxShadow: isMe ? '0 4px 15px rgba(var(--primary-rgb), 0.3)' : 'none',
-                        alignSelf: 'flex-start'
+                        boxShadow: isMe ? '0 4px 15px rgba(var(--primary-rgb), 0.2)' : 'none',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px'
                       }}>
                         {activeSelected.isGroup && !isMe && (
-                          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: senderInfo.color, marginBottom: '4px' }}>
+                          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: senderInfo.color, marginBottom: '2px' }}>
                             {senderInfo.name}
                           </div>
                         )}
-                        <div style={{ fontSize: '0.9rem', lineHeight: '1.4' }}>{m.content}</div>
+                        <div style={{ fontSize: '0.92rem', lineHeight: '1.4', paddingRight: '10px' }}>{m.content}</div>
                         <div style={{ 
-                          position: 'absolute', 
-                          bottom: '6px', 
-                          right: '12px', 
-                          fontSize: '0.6rem', 
-                          opacity: 0.7, 
+                          fontSize: '0.62rem', 
+                          opacity: 0.6, 
                           display: 'flex', 
                           alignItems: 'center', 
-                          gap: '4px' 
+                          justifyContent: 'flex-end',
+                          gap: '3px',
+                          marginTop: '2px'
                         }}>
                           {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           {isMe && <Check size={10} />}
