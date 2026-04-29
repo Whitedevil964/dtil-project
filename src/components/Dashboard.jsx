@@ -42,6 +42,7 @@ export default function Dashboard({ user, addToast, assignments, broadcasts = []
 
   const [nextClassInfo, setNextClassInfo] = useState('No more classes today');
   const [showGPACalc, setShowGPACalc] = useState(false);
+  const [showBroadcasts, setShowBroadcasts] = useState(false);
   const [gpaData, setGpaData] = useState([{ subject: '', marks: '' }]);
 
   useEffect(() => {
@@ -79,13 +80,8 @@ export default function Dashboard({ user, addToast, assignments, broadcasts = []
     return () => clearInterval(timer);
   }, [userSchedule]);
 
-  const showLatestBroadcasts = () => {
-    if (myBroadcasts.length === 0) {
-      addToast({ type: 'info', title: 'Neural Alerts', msg: 'No active broadcasts at this moment.' });
-      return;
-    }
-    const latest = myBroadcasts[0];
-    addToast({ type: 'success', title: `📡 ${latest.teacher_name}`, msg: latest.message });
+  const openBroadcasts = () => {
+    setShowBroadcasts(true);
   };
 
   return (
@@ -102,7 +98,7 @@ export default function Dashboard({ user, addToast, assignments, broadcasts = []
       <div className="quick-actions-bar">
         <button className="btn btn-ghost glass" onClick={() => window.location.hash = '#schedule'}><Calendar size={14} /> Full Schedule</button>
         <button className="btn btn-ghost glass" onClick={() => setShowGPACalc(true)}><Zap size={14} /> GPA Calculator</button>
-        <button className="btn btn-ghost glass" onClick={showLatestBroadcasts}><Bell size={14} /> Neural Alerts</button>
+        <button className="btn btn-ghost glass" onClick={openBroadcasts}><Bell size={14} /> Neural Alerts</button>
       </div>
 
       {/* Stats */}
@@ -110,7 +106,7 @@ export default function Dashboard({ user, addToast, assignments, broadcasts = []
         {[
           { label: nextClassInfo.includes('starts in') ? 'Next Class In' : 'Status', value: nextClassInfo.includes('starts in') ? nextClassInfo.split('in ')[1] : 'Finished', subLabel: nextClassInfo.split(' · ')[0], icon: Clock, color: '#8b5cf6' },
           { label: 'Pending Tasks', value: `${pendingAssignments.length}`, icon: AlertCircle, color: '#ef4444' },
-          { label: 'Neural Alerts', value: `${myBroadcasts.length}`, icon: Bell, color: '#f59e0b', onClick: showLatestBroadcasts },
+          { label: 'Neural Alerts', value: `${myBroadcasts.length}`, icon: Bell, color: '#f59e0b', onClick: openBroadcasts },
           { label: 'Attendance %', value: '91%', icon: Users, color: '#10b981' },
         ].map(s => (
           <div key={s.label} className="stat-card glass glass-hover" onClick={s.onClick} style={{ cursor: s.onClick ? 'pointer' : 'default' }}>
@@ -313,6 +309,41 @@ export default function Dashboard({ user, addToast, assignments, broadcasts = []
                   })()}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBroadcasts && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass fade-in" style={{ width: '100%', maxWidth: '500px', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+            <div style={{ padding: '20px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Bell size={20} /> Neural Alerts & Broadcasts
+              </div>
+              <button className="btn-ghost" onClick={() => setShowBroadcasts(false)} style={{ color: 'white' }}><X size={20} /></button>
+            </div>
+            <div style={{ padding: '24px', maxHeight: '70vh', overflowY: 'auto' }}>
+              {myBroadcasts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>No active broadcasts in the neural grid.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {myBroadcasts.map((b, i) => (
+                    <div key={i} className="glass" style={{ padding: '16px', borderLeft: `4px solid ${b.priority === 'urgent' ? '#ef4444' : '#f59e0b'}` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: b.priority === 'urgent' ? '#ef4444' : '#f59e0b' }}>
+                          {b.teacher_name}
+                        </span>
+                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                          {new Date(b.created_at).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: '1.5', color: '#f1f5f9' }}>{b.message}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button className="btn btn-primary" onClick={() => setShowBroadcasts(false)} style={{ width: '100%', marginTop: '20px' }}>Close Neural Link</button>
             </div>
           </div>
         </div>
